@@ -3,9 +3,23 @@
 use core::panic::PanicInfo;
 use core::arch::global_asm;
 
+struct Uart;
+
+impl core::fmt::Write for Uart{
+    fn write_str(&mut self, s: &str) -> core::fmt::Result{
+        let uart = 0x10000000 as *mut u8;
+        for b in s.bytes(){
+            unsafe{ *uart = b; }
+        }
+        Ok(())
+    }
+}
+
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    
+fn panic(info: &PanicInfo) -> ! {
+    use core::fmt::Write;
+    let _ = write!(Uart,"{}",info);
+    loop{}
 }
 
 global_asm!(
@@ -41,5 +55,7 @@ extern "C" fn rust_main() -> ! {
     unsafe{
         *uart = c;
     }
-    loop{}
+    panic!("test panic!");
+   
 }
+
