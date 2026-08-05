@@ -42,8 +42,9 @@ global_asm!(
     bss_done:
     j rust_main
 
+    .align 4
     .global trap_entry
-trap_entry:
+    trap_entry:
     addi sp, sp, -256
     sd x1,  0(sp)
     sd x3,  16(sp)
@@ -117,22 +118,18 @@ trap_entry:
 extern "C" fn trap_handler(){
     let mut uart = Uart;
     let _ = writeln!(uart,"trap occured");
-    loop{}
 }
 unsafe extern "C" {
     fn trap_entry();
 }
 #[unsafe(no_mangle)]
 extern "C" fn rust_main() -> ! {
+    unsafe{
+        core::arch::asm!("csrw stvec,{}", in(reg) trap_entry as *const () as usize);
+    }
 
-    let uart = 0x10000000 as *mut u8;
-    let c: u8 = b'A';
-    unsafe{
-        *uart = c;
-    }
-    unsafe{
-        core::arch::asm!("csrw stvec, {}", in(reg) trap_entry as usize);
-    }
+    let _ = write!(Uart,"!!!!!Test Line!!!!!");
+
     unsafe {
         core::ptr::read_volatile(0xdeadbeef as *const u8);
     }
