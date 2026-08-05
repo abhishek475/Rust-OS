@@ -117,6 +117,16 @@ global_asm!(
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(){
     let mut uart = Uart;
+    let mut sepc: usize;
+    let mut sepc: usize;
+    unsafe {
+        core::arch::asm!("csrr {}, sepc", out(reg) sepc);
+    }
+    sepc += 4;
+    unsafe {
+        core::arch::asm!("csrw sepc, {}", in(reg) sepc);
+    }
+
     let _ = writeln!(uart,"trap occured");
 }
 unsafe extern "C" {
