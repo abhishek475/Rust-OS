@@ -119,6 +119,7 @@ unsafe extern "C" {
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(){
         let mut sepc : usize;
+        let mut scause : usize;
         unsafe{
             core::arch::asm!("csrr {},sepc", out(reg) sepc);
         }
@@ -126,6 +127,10 @@ extern "C" fn trap_handler(){
         unsafe{
             core::arch::asm!("csrw sepc,{}", in(reg) sepc);
         }
+        unsafe{
+            core::arch::asm!("csrr {},scause",out(reg) scause);
+        }
+        let _ = writeln!(Uart,"{}",scause);
         let _ = writeln!(Uart,"---TRAP OCCURED---");
 }
 
@@ -135,7 +140,10 @@ extern "C" fn rust_main() -> ! {
         core::arch::asm!("csrw stvec,{}", in(reg) _trap_entry as *const () as usize);
     }
 
-    let _ = write!(Uart,"!!!!!Test Line!!!!!");
+    let _ = writeln!(Uart,"!!!!!Test Line!!!!!");
+    unsafe{
+        core::ptr::read_volatile(0xdeadbeef as *const u8);
+    }
     loop{}
 }
 
