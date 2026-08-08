@@ -141,9 +141,6 @@ extern "C" fn rust_main() -> ! {
     }
 
     let _ = writeln!(Uart,"!!!!!Test Line!!!!!");
-    unsafe{
-        core::ptr::read_volatile(0xdeadbeef as *const u8);
-    }
     loop{}
 }
 
