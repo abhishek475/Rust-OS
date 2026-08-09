@@ -3,6 +3,7 @@
 use core::panic::PanicInfo;
 use core::arch::global_asm;
 use core::fmt::Write;
+use core::ptr::read_volatile;
 
 struct Uart;
 
@@ -123,6 +124,7 @@ extern "C" fn trap_handler(){
         unsafe{
             core::arch::asm!("csrr {},sepc", out(reg) sepc);
         }
+
         sepc += 4;
         unsafe{
             core::arch::asm!("csrw sepc,{}", in(reg) sepc);
@@ -141,6 +143,9 @@ extern "C" fn rust_main() -> ! {
     }
 
     let _ = writeln!(Uart,"!!!!!Test Line!!!!!");
+    unsafe{
+        core::ptr::read_volatile(0xdeadbeef as *const u8);
+    }
     loop{}
 }
 
