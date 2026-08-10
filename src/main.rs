@@ -119,21 +119,38 @@ unsafe extern "C" {
 }
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(){
-        let mut sepc : usize;
-        let mut scause : usize;
+    let mut sepc : usize;
+    let mut scause : usize;
+    unsafe{
+        core::arch::asm!("csrr {},scause",out(reg) scause);
+    }
+    let interrupt_bit = scause & 0x8000000000000000;
+    if(interrupt_bit == 0){
         unsafe{
             core::arch::asm!("csrr {},sepc", out(reg) sepc);
         }
-
         sepc += 4;
         unsafe{
             core::arch::asm!("csrw sepc,{}", in(reg) sepc);
         }
-        unsafe{
-            core::arch::asm!("csrr {},scause",out(reg) scause);
-        }
-        let _ = writeln!(Uart,"{}",scause);
-        let _ = writeln!(Uart,"---TRAP OCCURED---");
+    }
+       
+    let _ = writeln!(Uart,"{}",scause);
+    let _ = writeln!(Uart,"---TRAP OCCURED---");
+}
+
+fn set_timer(offset : u64){
+    let mut current : usize;
+    unsafe{ core::arch::asm!("csrr {},time", out(reg) current);}
+    let target = current as u64 + offset;
+        unsafe {
+        core::arch::asm!(
+            "ecall",
+            in("a7") 0x54494D45u64,
+            in("a6") 0u64,
+            in("a0") target,
+        );
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -141,11 +158,7 @@ extern "C" fn rust_main() -> ! {
     unsafe{
         core::arch::asm!("csrw stvec,{}", in(reg) _trap_entry as *const () as usize);
     }
-
     let _ = writeln!(Uart,"!!!!!Test Line!!!!!");
-    unsafe{
-        core::ptr::read_volatile(0xdeadbeef as *const u8);
-    }
     loop{}
 }
 
