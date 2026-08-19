@@ -3,7 +3,6 @@
 use core::panic::PanicInfo;
 use core::arch::global_asm;
 use core::fmt::Write;
-use core::ptr::read_volatile;
 
 struct Uart;
 
@@ -124,8 +123,9 @@ extern "C" fn trap_handler(){
     unsafe{
         core::arch::asm!("csrr {},scause",out(reg) scause);
     }
+    /*0x8000000000000000 has top bit as (1000) since 0x80... is written in hexadecimal and is converted into binary*/
     let interrupt_bit = scause & 0x8000000000000000;
-    if(interrupt_bit == 0){
+    if interrupt_bit == 0 {
         unsafe{
             core::arch::asm!("csrr {},sepc", out(reg) sepc);
         }
@@ -133,6 +133,10 @@ extern "C" fn trap_handler(){
         unsafe{
             core::arch::asm!("csrw sepc,{}", in(reg) sepc);
         }
+    }
+    else {
+        set_timer(50000000);
+  
     }
        
     let _ = writeln!(Uart,"{}",scause);
@@ -158,6 +162,13 @@ extern "C" fn rust_main() -> ! {
     unsafe{
         core::arch::asm!("csrw stvec,{}", in(reg) _trap_entry as *const () as usize);
     }
+    unsafe{
+        core::arch::asm!("csrs sie,{}", in(reg) 32u64);
+        core::arch::asm!("csrs sstatus,{}", in(reg) 2u64);
+    }
+    set_timer(50000000);
+      
+
     let _ = writeln!(Uart,"!!!!!Test Line!!!!!");
     loop{}
 }
